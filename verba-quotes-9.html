@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Verba — Words & Art</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Josefin+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --gold: #c9a84c; --gold-light: #e8cc7a; }
+html, body {
+  height: 100%; width: 100%; overflow: hidden;
+  background: #0a0a0a; font-family: 'Josefin Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent; touch-action: none;
+}
+
+#bg-a, #bg-b {
+  position: fixed; inset: 0; background-size: cover; background-position: center;
+  will-change: opacity; transition: opacity 1s ease;
+}
+#bg-b { opacity: 0; }
+#overlay {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(160deg,rgba(0,0,0,0.62) 0%,rgba(0,0,0,0.28) 45%,rgba(0,0,0,0.72) 100%);
+}
+#grain {
+  position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 150px 150px;
+}
+#app { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; }
+
+/* Header */
+#header {
+  padding: 18px 22px 0; flex-shrink: 0;
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+#logo {
+  font-family: 'Playfair Display', serif; font-style: italic; font-size: 24px;
+  color: var(--gold); letter-spacing: 0.06em; text-shadow: 0 2px 14px rgba(0,0,0,0.7);
+}
+#art-credit {
+  font-size: 10px; color: rgba(255,255,255,0.42); letter-spacing: 0.1em;
+  text-transform: uppercase; text-align: right; max-width: 58%;
+  line-height: 1.5; text-shadow: 0 1px 6px rgba(0,0,0,0.9); padding-top: 3px;
+}
+
+/* Pills */
+#cat-scroll {
+  flex-shrink: 0; padding: 14px 18px 0; overflow-x: auto; overflow-y: hidden;
+  white-space: nowrap; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+#cat-scroll::-webkit-scrollbar { display: none; }
+.pill {
+  display: inline-flex; align-items: center; padding: 6px 15px; margin-right: 7px;
+  border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.28); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: rgba(255,255,255,0.7); font-family: 'Josefin Sans', sans-serif;
+  font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.22s; user-select: none;
+}
+.pill.active { background: var(--gold); border-color: var(--gold); color: #000; }
+
+/* Quote zone */
+#quote-zone {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 16px 0 8px;
+}
+
+/* Quote layout: ["] [text] ["] side by side */
+#quote-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 10px;
+}
+/* Row containing marks + text only */
+#q-text-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 6px;
+}
+.qm {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 80px;
+  line-height: 1;
+  color: var(--gold);
+  opacity: 0.52;
+  user-select: none;
+  pointer-events: none;
+  flex-shrink: 0;
+  align-self: center;
+}
+#quote-wrap {
+  max-width: 400px; width: 100%; text-align: center;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+#quote-wrap.out { opacity: 0; transform: translateY(12px); }
+
+#q-text {
+  font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic;
+  font-size: clamp(20px, 5.2vw, 32px); line-height: 1.55; color: #fff;
+  text-shadow: 0 2px 22px rgba(0,0,0,0.75), 0 1px 5px rgba(0,0,0,0.9);
+  letter-spacing: 0.01em;
+}
+#q-rule { width: 38px; height: 1px; background: var(--gold); opacity: 0.65; margin: 20px auto 16px; }
+#q-author {
+  font-family: 'Josefin Sans', sans-serif; font-size: 12px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--gold-light); text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+}
+#q-source {
+  margin-top: 6px; font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 13px; color: rgba(255,255,255,0.4); text-shadow: 0 1px 5px rgba(0,0,0,0.8);
+}
+
+/* Hint */
+#hint {
+  text-align: center; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(255,255,255,0.28); padding: 6px 0 2px; transition: opacity 1.2s; flex-shrink: 0;
+}
+
+/* Controls */
+#controls {
+  flex-shrink: 0; padding: 8px 18px 30px;
+  display: flex; gap: 10px; align-items: center; justify-content: center;
+}
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: none; cursor: pointer; font-family: 'Josefin Sans', sans-serif;
+  letter-spacing: 0.14em; text-transform: uppercase; transition: transform 0.15s;
+  border-radius: 30px; touch-action: manipulation; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.93); }
+#btn-shuffle {
+  flex: 1; max-width: 195px; padding: 15px 20px;
+  background: var(--gold); color: #000; font-size: 12.5px;
+  box-shadow: 0 4px 26px rgba(201,168,76,0.38);
+}
+#btn-art, #btn-save {
+  padding: 15px 16px; background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.17); color: rgba(255,255,255,0.82);
+  font-size: 11.5px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.ico { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%) translateY(16px);
+  background: rgba(18,18,18,0.92); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.9); padding: 9px 20px; border-radius: 30px;
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0; transition: all 0.28s; z-index: 99; white-space: nowrap;
+  backdrop-filter: blur(14px);
+}
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="bg-a"></div>
+<div id="bg-b"></div>
+<div id="overlay"></div>
+<div id="grain"></div>
+
+<div id="app">
+  <div id="header">
+    <div id="logo">Verba</div>
+    <div id="art-credit"></div>
+  </div>
+
+  <div id="cat-scroll">
+    <span class="pill active" data-cat="all">✦ All</span>
+    <span class="pill" data-cat="philosophy">Philosophy</span>
+    <span class="pill" data-cat="science">Science</span>
+    <span class="pill" data-cat="literature">Literature</span>
+    <span class="pill" data-cat="wisdom">Wisdom</span>
+    <span class="pill" data-cat="art">Art &amp; Creativity</span>
+    <span class="pill" data-cat="nature">Nature</span>
+    <span class="pill" data-cat="courage">Courage</span>
+    <span class="pill" data-cat="truth">Truth</span>
+    <span class="pill" data-cat="time">Time &amp; Life</span>
+    <span class="pill" data-cat="justice">Justice</span>
+  </div>
+
+  <div id="quote-zone">
+    <div id="quote-outer">
+      <div id="quote-wrap">
+        <div id="q-text-row">
+          <span class="qm">&#x201C;</span>
+          <p id="q-text"></p>
+          <span class="qm">&#x201D;</span>
+        </div>
+        <div id="q-rule"></div>
+        <div id="q-author"></div>
+        <div id="q-source"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="hint">← swipe for quote &nbsp;·&nbsp; swipe up for art →</div>
+
+  <div id="controls">
+    <button class="btn" id="btn-art">
+      <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+      Art
+    </button>
+    <button class="btn" id="btn-shuffle">
+      <svg class="ico" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+      Shuffle
+    </button>
+    <button class="btn" id="btn-save">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Save
+    </button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ── GRADIENTS ──
+const GRADIENTS = [
+  "linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
+  "linear-gradient(160deg,#1a0533,#3d1066,#0d0d2b)",
+  "linear-gradient(145deg,#0d1b2a,#1b4332,#081c15)",
+  "linear-gradient(150deg,#3b1f07,#6b3a2a,#1a0a00)",
+  "linear-gradient(135deg,#0a0a0a,#1c1c2e,#16213e)",
+  "linear-gradient(160deg,#200122,#6f0000,#200122)",
+  "linear-gradient(145deg,#0f0c29,#302b63,#24243e)",
+  "linear-gradient(135deg,#093028,#237a57,#04080f)",
+  "linear-gradient(135deg,#1f1c2c,#928dab)",
+  "radial-gradient(ellipse at 30% 40%,#2d1b69 0%,#0a0a0a 70%)",
+  "radial-gradient(ellipse at 70% 60%,#4a1942 0%,#050505 65%)",
+  "linear-gradient(170deg,#05101a,#0a3d62,#05101a)",
+  "linear-gradient(140deg,#1a1a1a 0%,#2d4a22 50%,#1a1a1a 100%)",
+  "radial-gradient(ellipse at 50% 20%,#3d2b1f 0%,#0a0605 70%)",
+  "linear-gradient(135deg,#2c0735,#8e0038,#0d0208)",
+  "radial-gradient(ellipse at 20% 80%,#0c3547 0%,#040d12 70%)",
+  "linear-gradient(160deg,#16222a,#3a6186)",
+  "linear-gradient(145deg,#000428,#004e92)",
+  "linear-gradient(150deg,#0b0007,#3d0c02,#0b0007)",
+  "linear-gradient(135deg,#1a0000,#3d1515,#0a0000)",
+];
+
+// ── ART INSTITUTE OF CHICAGO — CCO, open CORS ──
+const ARTWORKS = [
+  // ── Van Gogh ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg&width=1200", title:"The Starry Night", artist:"Vincent van Gogh", year:"1889"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Vincent_van_Gogh_-_The_Bedroom_-_Google_Art_Project.jpg&width=1200", title:"The Bedroom", artist:"Vincent van Gogh", year:"1888"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Van_Gogh_-_Sunflowers_-_VGM_F458.jpg&width=1200", title:"Sunflowers", artist:"Vincent van Gogh", year:"1888"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project_(454045).jpg&width=1200", title:"Self-Portrait", artist:"Vincent van Gogh", year:"1889"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Vincent_van_Gogh_-_The_Night_Cafe_-_Google_Art_Project.jpg&width=1200", title:"The Night Café", artist:"Vincent van Gogh", year:"1888"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Van_Gogh_-_Starry_Night_Over_the_Rhone.jpg&width=1200", title:"Starry Night Over the Rhône", artist:"Vincent van Gogh", year:"1888"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Van_Gogh_Irises_in_The_Getty.jpg&width=1200", title:"Irises", artist:"Vincent van Gogh", year:"1889"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Wheat_Field_with_Cypresses_(Metropolitan_Museum_of_Art).jpg&width=1200", title:"Wheat Field with Cypresses", artist:"Vincent van Gogh", year:"1889"},
+  // ── Monet ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Claude_Monet_-_The_Water-Lily_Pond_-_Google_Art_Project.jpg&width=1200", title:"Water Lily Pond", artist:"Claude Monet", year:"1899"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Claude_Monet_-_Haystacks,_(sunset).jpg&width=1200", title:"Haystacks at Sunset", artist:"Claude Monet", year:"1891"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Claude_Monet_-_Woman_with_a_Parasol_-_Madame_Monet_and_Her_Son_-_Google_Art_Project.jpg&width=1200", title:"Woman with a Parasol", artist:"Claude Monet", year:"1875"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Claude_Monet_-_The_Regatta_at_Argenteuil_-_Google_Art_Project.jpg&width=1200", title:"The Regatta at Argenteuil", artist:"Claude Monet", year:"1872"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Claude_Monet_-_Impression,_Sunrise.jpg&width=1200", title:"Impression, Sunrise", artist:"Claude Monet", year:"1872"},
+  // ── Vermeer ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Vermeer_-_Girl_Reading_a_Letter_at_an_Open_Window.jpg&width=1200", title:"Girl Reading a Letter at an Open Window", artist:"Johannes Vermeer", year:"c.1657"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/1665_Girl_with_a_Pearl_Earring.jpg&width=1200", title:"Girl with a Pearl Earring", artist:"Johannes Vermeer", year:"1665"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Johannes_Vermeer_-_The_Milkmaid_-_Google_Art_Project.jpg&width=1200", title:"The Milkmaid", artist:"Johannes Vermeer", year:"c.1660"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Johannes_Vermeer_-_The_Art_of_Painting_-_Google_Art_Project.jpg&width=1200", title:"The Art of Painting", artist:"Johannes Vermeer", year:"c.1666"},
+  // ── Rembrandt ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Rembrandt_van_Rijn_-_Self-Portrait_-_Google_Art_Project.jpg&width=1200", title:"Self-Portrait", artist:"Rembrandt van Rijn", year:"1659"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Rembrandt_Harmensz._van_Rijn_-_Return_of_the_Prodigal_Son_-_Google_Art_Project.jpg&width=1200", title:"Return of the Prodigal Son", artist:"Rembrandt van Rijn", year:"c.1668"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/The_Night_Watch_-_HD.jpg&width=1200", title:"The Night Watch", artist:"Rembrandt van Rijn", year:"1642"},
+  // ── Hokusai ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Tsunami_by_hokusai_19th_century.jpg&width=1200", title:"The Great Wave off Kanagawa", artist:"Katsushika Hokusai", year:"c.1831"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Fuji_from_Gotenyama_at_Shinagawa_on_the_Tokaido_(Katsushika_Hokusai).jpg&width=1200", title:"Fuji from Gotenyama", artist:"Katsushika Hokusai", year:"c.1831"},
+  // ── Renoir ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Pierre-Auguste_Renoir_-_Dance_at_Le_Moulin_de_la_Galette.jpg&width=1200", title:"Dance at Le Moulin de la Galette", artist:"Pierre-Auguste Renoir", year:"1876"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Pierre-Auguste_Renoir_-_Luncheon_of_the_Boating_Party_-_Google_Art_Project.jpg&width=1200", title:"Luncheon of the Boating Party", artist:"Pierre-Auguste Renoir", year:"1881"},
+  // ── Degas ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Edgar_Degas_-_Blue_Dancers.jpg&width=1200", title:"Blue Dancers", artist:"Edgar Degas", year:"c.1897"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Edgar_Degas_-_La_classe_de_danse_-_Musee_d_Orsay.jpg&width=1200", title:"The Dance Class", artist:"Edgar Degas", year:"1874"},
+  // ── Friedrich ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Caspar_David_Friedrich_-_Wanderer_above_the_sea_of_fog.jpg&width=1200", title:"Wanderer above the Sea of Fog", artist:"Caspar David Friedrich", year:"1818"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Caspar_David_Friedrich_-_Two_Men_Contemplating_the_Moon_-_Google_Art_Project.jpg&width=1200", title:"Two Men Contemplating the Moon", artist:"Caspar David Friedrich", year:"1825"},
+  // ── Turner ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/The_Fighting_Temeraire,_JMW_Turner,_National_Gallery.jpg&width=1200", title:"The Fighting Temeraire", artist:"J.M.W. Turner", year:"1839"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Joseph_Mallord_William_Turner_-_Snow_Storm_-_Steam-Boat_off_a_Harbour%27s_Mouth.jpg&width=1200", title:"Snow Storm: Steam-Boat off a Harbour's Mouth", artist:"J.M.W. Turner", year:"1842"},
+  // ── Pre-Raphaelites ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/John_Everett_Millais_-_Ophelia_-_Google_Art_Project.jpg&width=1200", title:"Ophelia", artist:"John Everett Millais", year:"1852"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Dante_Gabriel_Rossetti_-_Proserpine.jpg&width=1200", title:"Proserpine", artist:"Dante Gabriel Rossetti", year:"1874"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/John_William_Waterhouse_-_The_Lady_of_Shalott.jpg&width=1200", title:"The Lady of Shalott", artist:"John William Waterhouse", year:"1888"},
+  // ── Manet ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Edouard_Manet_-_Luncheon_on_the_Grass_-_Google_Art_Project.jpg&width=1200", title:"Luncheon on the Grass", artist:"Édouard Manet", year:"1863"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Edouard_Manet_-_Olympia_-_Google_Art_Project.jpg&width=1200", title:"Olympia", artist:"Édouard Manet", year:"1863"},
+  // ── Klimt ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg&width=1200", title:"The Kiss", artist:"Gustav Klimt", year:"1907"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Gustav_Klimt_-_Adele_Bloch-Bauer_I_-_Google_Art_Project.jpg&width=1200", title:"Portrait of Adele Bloch-Bauer I", artist:"Gustav Klimt", year:"1907"},
+  // ── Sargent ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Singer_Sargent,_John_-_Carnation,_Lily,_Lily,_Rose.jpg&width=1200", title:"Carnation, Lily, Lily, Rose", artist:"John Singer Sargent", year:"1886"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/John_Singer_Sargent_-_Madame_X_(Madame_Pierre_Gautreau)_-_Google_Art_Project.jpg&width=1200", title:"Madame X", artist:"John Singer Sargent", year:"1884"},
+  // ── Homer ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Winslow_Homer_-_Breezing_Up_(A_Fair_Wind)_-_Google_Art_Project.jpg&width=1200", title:"Breezing Up (A Fair Wind)", artist:"Winslow Homer", year:"1876"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Winslow_Homer_-_Snap_the_Whip.jpg&width=1200", title:"Snap the Whip", artist:"Winslow Homer", year:"1872"},
+  // ── Seurat ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/A_Sunday_on_La_Grande_Jatte,_Georges_Seurat,_1884.jpg&width=1200", title:"A Sunday on La Grande Jatte", artist:"Georges Seurat", year:"1886"},
+  // ── Old Masters ──
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg&width=1200", title:"Mona Lisa", artist:"Leonardo da Vinci", year:"c.1503"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Michelangelo_-_Creation_of_Adam_(cropped).jpg&width=1200", title:"The Creation of Adam", artist:"Michelangelo", year:"1512"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Raphael_-_School_of_Athens.jpg&width=1200", title:"The School of Athens", artist:"Raphael", year:"1511"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Las_Meninas,_by_Diego_Velazquez,_from_Prado_in_Google_Earth.jpg&width=1200", title:"Las Meninas", artist:"Diego Velázquez", year:"1656"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg&width=1200", title:"The Birth of Venus", artist:"Sandro Botticelli", year:"c.1484"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Eug%C3%A8ne_Delacroix_-_La_libert%C3%A9_guidant_le_peuple.jpg&width=1200", title:"Liberty Leading the People", artist:"Eugène Delacroix", year:"1830"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/The_Third_of_May_1808_by_Francisco_Goya.jpg&width=1200", title:"The Third of May 1808", artist:"Francisco Goya", year:"1814"},
+  {url:"https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Goya_Saturn_Devouring_Son.jpg&width=1200", title:"Saturn Devouring His Son", artist:"Francisco Goya", year:"1823"},
+];
+
+
+
+// ── QUOTES ──
+const QUOTES = [
+  {t:"The unexamined life is not worth living.",a:"Socrates",s:"Plato, Apology, 38a",c:"philosophy"},
+  {t:"He who has a why to live can bear almost any how.",a:"Friedrich Nietzsche",s:"Twilight of the Idols, 1889",c:"philosophy"},
+  {t:"To be is to be perceived.",a:"George Berkeley",s:"Principles of Human Knowledge, 1710",c:"philosophy"},
+  {t:"Man is condemned to be free.",a:"Jean-Paul Sartre",s:"Existentialism Is a Humanism, 1945",c:"philosophy"},
+  {t:"One cannot step twice into the same river.",a:"Heraclitus",s:"Fragment 91, as cited by Plutarch",c:"philosophy"},
+  {t:"The only true wisdom is in knowing you know nothing.",a:"Socrates",s:"Plato, Apology, 21d",c:"philosophy"},
+  {t:"That which does not kill us makes us stronger.",a:"Friedrich Nietzsche",s:"Twilight of the Idols, 1889",c:"philosophy"},
+  {t:"I think, therefore I am.",a:"René Descartes",s:"Discourse on the Method, 1637",c:"philosophy"},
+  {t:"Leisure is the mother of philosophy.",a:"Thomas Hobbes",s:"Leviathan, 1651",c:"philosophy"},
+  {t:"We are what we repeatedly do. Excellence, then, is not an act, but a habit.",a:"Will Durant",s:"The Story of Philosophy, 1926 (paraphrasing Aristotle)",c:"philosophy"},
+  {t:"The measure of a man is what he does with power.",a:"Plato",s:"Republic, Book I",c:"philosophy"},
+  {t:"God is dead. God remains dead. And we have killed him.",a:"Friedrich Nietzsche",s:"The Gay Science, §125, 1882",c:"philosophy"},
+  {t:"Philosophy is at once the most sublime and the most trivial of human pursuits.",a:"William James",s:"Pragmatism, Lecture I, 1907",c:"philosophy"},
+  {t:"Imagination is more important than knowledge.",a:"Albert Einstein",s:"Interview, Saturday Evening Post, 1929",c:"science"},
+  {t:"If I have seen further, it is by standing on the shoulders of giants.",a:"Isaac Newton",s:"Letter to Robert Hooke, February 5, 1675",c:"science"},
+  {t:"The important thing is not to stop questioning. Curiosity has its own reason for existing.",a:"Albert Einstein",s:"LIFE Magazine, May 2, 1955",c:"science"},
+  {t:"Science is not only compatible with spirituality; it is a profound source of spirituality.",a:"Carl Sagan",s:"The Demon-Haunted World, 1995",c:"science"},
+  {t:"The cosmos is within us. We are made of star-stuff.",a:"Carl Sagan",s:"Cosmos, Episode 1, 1980",c:"science"},
+  {t:"Research is to see what everybody else has seen, and to think what nobody else has thought.",a:"Albert Szent-Györgyi",s:"Bioenergetics, 1957",c:"science"},
+  {t:"Nothing in life is to be feared, only to be understood.",a:"Marie Curie",s:"As cited in Our Precarious Habitat, 1973",c:"science"},
+  {t:"The greatest enemy of knowledge is not ignorance, it is the illusion of knowledge.",a:"Daniel J. Boorstin",s:"Introduction to The Discoverers, 1983",c:"science"},
+  {t:"I have no special talent. I am only passionately curious.",a:"Albert Einstein",s:"Letter to Carl Seelig, March 11, 1952",c:"science"},
+  {t:"The most beautiful thing we can experience is the mysterious.",a:"Albert Einstein",s:"What I Believe, Forum and Century, 1930",c:"science"},
+  {t:"An expert is a man who has made all the mistakes which can be made, in a narrow field.",a:"Niels Bohr",s:"As attributed by Edward Teller, 1975",c:"science"},
+  {t:"It was the best of times, it was the worst of times.",a:"Charles Dickens",s:"A Tale of Two Cities, Chapter 1, 1859",c:"literature"},
+  {t:"All that is gold does not glitter; not all those who wander are lost.",a:"J.R.R. Tolkien",s:"The Fellowship of the Ring, 1954",c:"literature"},
+  {t:"To be, or not to be, that is the question.",a:"William Shakespeare",s:"Hamlet, Act III, Scene I, c.1600",c:"literature"},
+  {t:"The fool doth think he is wise, but the wise man knows himself to be a fool.",a:"William Shakespeare",s:"As You Like It, Act V, Scene 1",c:"literature"},
+  {t:"All animals are equal, but some animals are more equal than others.",a:"George Orwell",s:"Animal Farm, Chapter X, 1945",c:"literature"},
+  {t:"It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",a:"Jane Austen",s:"Pride and Prejudice, Chapter 1, 1813",c:"literature"},
+  {t:"Whatever our souls are made of, his and mine are the same.",a:"Emily Brontë",s:"Wuthering Heights, Chapter 9, 1847",c:"literature"},
+  {t:"I am no bird; and no net ensnares me: I am a free human being with an independent will.",a:"Charlotte Brontë",s:"Jane Eyre, Chapter 23, 1847",c:"literature"},
+  {t:"Happy families are all alike; every unhappy family is unhappy in its own way.",a:"Leo Tolstoy",s:"Anna Karenina, Chapter 1, 1877",c:"literature"},
+  {t:"I took a deep breath and listened to the old brag of my heart: I am, I am, I am.",a:"Sylvia Plath",s:"The Bell Jar, Chapter 20, 1963",c:"literature"},
+  {t:"There is no friend as loyal as a book.",a:"Ernest Hemingway",s:"Attributed by multiple contemporaries",c:"literature"},
+  {t:"Call me Ishmael.",a:"Herman Melville",s:"Moby-Dick, Chapter 1, 1851",c:"literature"},
+  {t:"The journey of a thousand miles begins with one step.",a:"Laozi",s:"Tao Te Ching, Chapter 64, c.400 BC",c:"wisdom"},
+  {t:"It does not matter how slowly you go as long as you do not stop.",a:"Confucius",s:"Analects, traditional attribution",c:"wisdom"},
+  {t:"Knowing others is intelligence; knowing yourself is true wisdom.",a:"Laozi",s:"Tao Te Ching, Chapter 33",c:"wisdom"},
+  {t:"To know what you know and what you do not know, that is true knowledge.",a:"Confucius",s:"Analects, Book II, Chapter 17",c:"wisdom"},
+  {t:"What you do not want done to yourself, do not do to others.",a:"Confucius",s:"Analects, Book XV, Chapter 24",c:"wisdom"},
+  {t:"Give me a lever long enough and a fulcrum on which to place it, and I shall move the world.",a:"Archimedes",s:"As cited by Pappus of Alexandria, c.340 AD",c:"wisdom"},
+  {t:"The wise man does not lay up his own treasures. The more he gives to others, the more he has.",a:"Laozi",s:"Tao Te Ching, Chapter 81",c:"wisdom"},
+  {t:"Before you embark on a journey of revenge, dig two graves.",a:"Confucius",s:"Traditional attribution",c:"wisdom"},
+  {t:"Our greatest glory is not in never falling, but in rising every time we fall.",a:"Confucius",s:"Analects, attributed",c:"wisdom"},
+  {t:"Every child is an artist. The problem is how to remain an artist once we grow up.",a:"Pablo Picasso",s:"As quoted in Dore Ashton, Picasso on Art, 1972",c:"art"},
+  {t:"Art is not what you see, but what you make others see.",a:"Edgar Degas",s:"As cited in multiple exhibition catalogues",c:"art"},
+  {t:"Have no fear of perfection—you'll never reach it.",a:"Salvador Dalí",s:"As cited in Meryle Secrest, Salvador Dalí, 1986",c:"art"},
+  {t:"The purpose of art is washing the dust of daily life off our souls.",a:"Pablo Picasso",s:"As attributed; widely cited by 1960s",c:"art"},
+  {t:"In order to be irreplaceable, one must always be different.",a:"Coco Chanel",s:"As cited in multiple biographies",c:"art"},
+  {t:"I saw the angel in the marble and carved until I set him free.",a:"Michelangelo",s:"As attributed by Giorgio Vasari, Lives of the Artists, 1550",c:"art"},
+  {t:"An artist is not paid for his labor but for his vision.",a:"James McNeill Whistler",s:"As quoted in E.R. Pennell, Life of James McNeill Whistler, 1908",c:"art"},
+  {t:"Art enables us to find ourselves and lose ourselves at the same time.",a:"Thomas Merton",s:"No Man Is an Island, 1955",c:"art"},
+  {t:"The job of the artist is always to deepen the mystery.",a:"Francis Bacon",s:"Interview with John Gruen, 1975",c:"art"},
+  {t:"The chief enemy of creativity is good sense.",a:"Pablo Picasso",s:"As widely attributed",c:"art"},
+  {t:"Look deep into nature, and then you will understand everything better.",a:"Albert Einstein",s:"Letter, 1951",c:"nature"},
+  {t:"In every walk with nature, one receives far more than he seeks.",a:"John Muir",s:"John of the Mountains, 1938",c:"nature"},
+  {t:"The clearest way into the Universe is through a forest wilderness.",a:"John Muir",s:"John of the Mountains, 1938",c:"nature"},
+  {t:"Nature does not hurry, yet everything is accomplished.",a:"Laozi",s:"Tao Te Ching, Chapter 15",c:"nature"},
+  {t:"Adopt the pace of nature: her secret is patience.",a:"Ralph Waldo Emerson",s:"Journal, 1843",c:"nature"},
+  {t:"The world is mud-luscious and puddle-wonderful.",a:"e.e. cummings",s:"in Just—, 1920",c:"nature"},
+  {t:"Earth and sky, woods and fields, lakes and rivers, the mountain and the sea, are excellent schoolmasters.",a:"John Lubbock",s:"The Use of Life, 1894",c:"nature"},
+  {t:"Courage is not the absence of fear, but the triumph over it.",a:"Nelson Mandela",s:"Long Walk to Freedom, 1994",c:"courage"},
+  {t:"It is not in the stars to hold our destiny but in ourselves.",a:"William Shakespeare",s:"Julius Caesar, Act I, Scene II",c:"courage"},
+  {t:"You gain strength, courage, and confidence by every experience in which you really stop to look fear in the face.",a:"Eleanor Roosevelt",s:"You Learn by Living, 1960",c:"courage"},
+  {t:"I am not afraid of storms, for I am learning how to sail my ship.",a:"Louisa May Alcott",s:"Little Women, Chapter 14, 1868",c:"courage"},
+  {t:"Do one thing every day that scares you.",a:"Eleanor Roosevelt",s:"You Learn by Living, 1960",c:"courage"},
+  {t:"Out of suffering have emerged the strongest souls; the most massive characters are seared with scars.",a:"Kahlil Gibran",s:"Spiritual Sayings, 1962",c:"courage"},
+  {t:"Boldness be my friend.",a:"William Shakespeare",s:"Cymbeline, Act I, Scene VI",c:"courage"},
+  {t:"It takes courage to grow up and become who you really are.",a:"e.e. cummings",s:"As quoted in The Magic-Maker, Charles Norman, 1958",c:"courage"},
+  {t:"Success is not final, failure is not fatal: it is the courage to continue that counts.",a:"Winston Churchill",s:"Earliest confirmed print, 1940s",c:"courage"},
+  {t:"The truth will set you free, but first it will make you miserable.",a:"James A. Garfield",s:"Commencement address, 1871",c:"truth"},
+  {t:"Knowledge is power.",a:"Francis Bacon",s:"Meditationes Sacrae, 1597",c:"truth"},
+  {t:"The truth is rarely pure and never simple.",a:"Oscar Wilde",s:"The Importance of Being Earnest, Act I, 1895",c:"truth"},
+  {t:"Wisdom is not a product of schooling but of the lifelong attempt to acquire it.",a:"Albert Einstein",s:"Letter to J. Dispentiere, March 24, 1954",c:"truth"},
+  {t:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin",s:"Poor Richard's Almanack, 1758",c:"truth"},
+  {t:"The mind is not a vessel to be filled but a fire to be kindled.",a:"Plutarch",s:"On Listening to Lectures, c.100 AD",c:"truth"},
+  {t:"Facts do not cease to exist because they are ignored.",a:"Aldous Huxley",s:"Proper Studies, 1927",c:"truth"},
+  {t:"It is the mark of an educated mind to be able to entertain a thought without accepting it.",a:"Aristotle",s:"Nicomachean Ethics",c:"truth"},
+  {t:"Life is what happens to us while we are making other plans.",a:"Allen Saunders",s:"Reader's Digest, January 1957",c:"time"},
+  {t:"Time you enjoy wasting is not wasted time.",a:"Marthe Troly-Curtin",s:"Phrynette Married, 1911",c:"time"},
+  {t:"Lost time is never found again.",a:"Benjamin Franklin",s:"Poor Richard's Almanack, 1748",c:"time"},
+  {t:"We must be willing to let go of the life we planned so as to have the life that is waiting for us.",a:"Joseph Campbell",s:"A Joseph Campbell Companion, 1991",c:"time"},
+  {t:"Tell me, what is it you plan to do with your one wild and precious life?",a:"Mary Oliver",s:"The Summer Day, 1992",c:"time"},
+  {t:"The present moment always will have been.",a:"Epictetus",s:"Enchiridion, c.125 AD",c:"time"},
+  {t:"Life is really simple, but we insist on making it complicated.",a:"Confucius",s:"Analects, traditional attribution",c:"time"},
+  {t:"Yesterday is history, tomorrow is a mystery, today is a gift of God, which is why we call it the present.",a:"Bill Keane",s:"Family Circus, 1994",c:"time"},
+  {t:"The arc of the moral universe is long, but it bends toward justice.",a:"Theodore Parker",s:"Ten Sermons of Religion, 1853",c:"justice"},
+  {t:"Injustice anywhere is a threat to justice everywhere.",a:"Martin Luther King Jr.",s:"Letter from Birmingham Jail, April 16, 1963",c:"justice"},
+  {t:"The price of liberty is eternal vigilance.",a:"John Philpot Curran",s:"Speech on the Right of Election, 1790",c:"justice"},
+  {t:"Power tends to corrupt, and absolute power corrupts absolutely.",a:"Lord Acton",s:"Letter to Bishop Creighton, April 5, 1887",c:"justice"},
+  {t:"We hold these truths to be self-evident, that all men are created equal.",a:"Thomas Jefferson",s:"United States Declaration of Independence, 1776",c:"justice"},
+  {t:"To sin by silence when we should protest makes cowards out of men.",a:"Ella Wheeler Wilcox",s:"Protest, 1914",c:"justice"},
+  {t:"I have a dream that my four little children will one day live in a nation where they will not be judged by the color of their skin but by the content of their character.",a:"Martin Luther King Jr.",s:"March on Washington, August 28, 1963",c:"justice"},
+
+  // ── PHILOSOPHY (additional) ──
+  {t:"The life of the mind is the only life worth living.",a:"Socrates",s:"Plato, Phaedo, 64a",c:"philosophy"},
+  {t:"Man is by nature a political animal.",a:"Aristotle",s:"Politics, Book I, 1253a",c:"philosophy"},
+  {t:"We are all chained to fortune: the chain of one is made of gold, and wide; that of another, short and rusty.",a:"Seneca",s:"Letters to Lucilius, Letter 77",c:"philosophy"},
+  {t:"It is not death that a man should fear, but he should fear never beginning to live.",a:"Marcus Aurelius",s:"Meditations, Book XII",c:"philosophy"},
+  {t:"You have power over your mind, not outside events. Realize this, and you will find strength.",a:"Marcus Aurelius",s:"Meditations, Book VI",c:"philosophy"},
+  {t:"The impediment to action advances action. What stands in the way becomes the way.",a:"Marcus Aurelius",s:"Meditations, Book V",c:"philosophy"},
+  {t:"Waste no more time arguing about what a good man should be. Be one.",a:"Marcus Aurelius",s:"Meditations, Book X",c:"philosophy"},
+  {t:"He who is not a good servant will not be a good master.",a:"Plato",s:"Laws, Book VI, 762e",c:"philosophy"},
+  {t:"The beginning is the most important part of the work.",a:"Plato",s:"Republic, Book II, 377b",c:"philosophy"},
+  {t:"All human wisdom is summed up in two words: wait and hope.",a:"Alexandre Dumas",s:"The Count of Monte Cristo, Chapter 117, 1844",c:"philosophy"},
+  {t:"The curious paradox is that when I accept myself just as I am, then I can change.",a:"Carl Rogers",s:"On Becoming a Person, 1961",c:"philosophy"},
+  {t:"Between stimulus and response there is a space. In that space is our power to choose our response.",a:"Viktor Frankl",s:"Man's Search for Meaning, 1946",c:"philosophy"},
+  {t:"Everything can be taken from a man but one thing: the last of the human freedoms — to choose one's attitude in any given set of circumstances.",a:"Viktor Frankl",s:"Man's Search for Meaning, 1946",c:"philosophy"},
+
+  // ── SCIENCE (additional) ──
+  {t:"The good thing about science is that it's true whether or not you believe in it.",a:"Neil deGrasse Tyson",s:"Real Time with Bill Maher, 2011",c:"science"},
+  {t:"Somewhere, something incredible is waiting to be known.",a:"Carl Sagan",s:"Attributed; widely cited from 1977 onward",c:"science"},
+  {t:"Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.",a:"Albert Einstein",s:"Attributed by Frederick S. Perls, 1969",c:"science"},
+  {t:"We are all made of starstuff. We are a way for the cosmos to know itself.",a:"Carl Sagan",s:"Cosmos, Chapter 1, 1980",c:"science"},
+  {t:"The universe is under no obligation to make sense to you.",a:"Neil deGrasse Tyson",s:"Death by Black Hole, 2007",c:"science"},
+  {t:"Not knowing is not the problem. Being comfortable not knowing is the problem.",a:"Richard Feynman",s:"The Pleasure of Finding Things Out, 1981",c:"science"},
+  {t:"Physics is like sex: sure, it may give some practical results, but that's not why we do it.",a:"Richard Feynman",s:"Attributed; consistent with his known statements",c:"science"},
+  {t:"I would rather have questions that can't be answered than answers that can't be questioned.",a:"Richard Feynman",s:"Attributed; widely cited",c:"science"},
+  {t:"The first principle is that you must not fool yourself — and you are the easiest person to fool.",a:"Richard Feynman",s:"Caltech Commencement Address, 1974",c:"science"},
+  {t:"In science, there are no shortcuts to truth.",a:"Karl Popper",s:"Conjectures and Refutations, 1963",c:"science"},
+  {t:"A thinker sees his own actions as experiments and questions.",a:"Friedrich Nietzsche",s:"The Gay Science, §41, 1882",c:"science"},
+
+  // ── LITERATURE (additional) ──
+  {t:"There is no greater agony than bearing an untold story inside you.",a:"Maya Angelou",s:"I Know Why the Caged Bird Sings, 1969",c:"literature"},
+  {t:"One must always be careful of books, and what is inside them, for words have the power to change us.",a:"Cassandra Clare",s:"City of Bones, 2007",c:"literature"},
+  {t:"A reader lives a thousand lives before he dies. The man who never reads lives only one.",a:"George R.R. Martin",s:"A Dance with Dragons, 2011",c:"literature"},
+  {t:"If you only read the books that everyone else is reading, you can only think what everyone else is thinking.",a:"Haruki Murakami",s:"Norwegian Wood, 1987",c:"literature"},
+  {t:"Not all those who wander are lost.",a:"J.R.R. Tolkien",s:"The Fellowship of the Ring, 1954",c:"literature"},
+  {t:"It is impossible to live without failing at something, unless you live so cautiously that you might as well not have lived at all.",a:"J.K. Rowling",s:"Harvard Commencement Address, June 5, 2008",c:"literature"},
+  {t:"We accept the love we think we deserve.",a:"Stephen Chbosky",s:"The Perks of Being a Wallflower, 1999",c:"literature"},
+  {t:"You never really understand a person until you consider things from his point of view.",a:"Harper Lee",s:"To Kill a Mockingbird, Chapter 3, 1960",c:"literature"},
+  {t:"The world is a book, and those who do not travel read only one page.",a:"Saint Augustine",s:"Attributed; consistent with his writings, c.400 AD",c:"literature"},
+  {t:"It is a far, far better thing that I do, than I have ever done.",a:"Charles Dickens",s:"A Tale of Two Cities, Book III, Chapter 15, 1859",c:"literature"},
+  {t:"All great literature is one of two stories; a man goes on a journey or a stranger comes to town.",a:"Leo Tolstoy",s:"Attributed; widely cited",c:"literature"},
+
+  // ── WISDOM (additional) ──
+  {t:"Fall seven times, stand up eight.",a:"Japanese Proverb",s:"Traditional; widely documented in Japanese literature",c:"wisdom"},
+  {t:"The bamboo that bends is stronger than the oak that resists.",a:"Japanese Proverb",s:"Traditional",c:"wisdom"},
+  {t:"When the winds of change blow, some people build walls and others build windmills.",a:"Chinese Proverb",s:"Traditional",c:"wisdom"},
+  {t:"A gem cannot be polished without friction, nor a man perfected without trials.",a:"Seneca",s:"Letters to Lucilius, Letter 31",c:"wisdom"},
+  {t:"Luck is what happens when preparation meets opportunity.",a:"Seneca",s:"As cited by Lucius Annaeus Seneca, Letters, c.65 AD",c:"wisdom"},
+  {t:"He who fights with monsters should look to it that he himself does not become a monster.",a:"Friedrich Nietzsche",s:"Beyond Good and Evil, Aphorism 146, 1886",c:"wisdom"},
+  {t:"There are no facts, only interpretations.",a:"Friedrich Nietzsche",s:"Notebooks, 1886",c:"wisdom"},
+  {t:"One must still have chaos in oneself to be able to give birth to a dancing star.",a:"Friedrich Nietzsche",s:"Thus Spoke Zarathustra, Prologue §5, 1883",c:"wisdom"},
+  {t:"That man is richest whose pleasures are cheapest.",a:"Henry David Thoreau",s:"Journal, March 11, 1856",c:"wisdom"},
+  {t:"Not what we have but what we enjoy constitutes our abundance.",a:"Epicurus",s:"Fragment 423, as cited by Seneca",c:"wisdom"},
+  {t:"It is not the man who has too little, but the man who craves more, that is poor.",a:"Seneca",s:"Letters to Lucilius, Letter 2",c:"wisdom"},
+  {t:"He who has a why to live can bear almost any how.",a:"Friedrich Nietzsche",s:"Twilight of the Idols, 1889",c:"wisdom"},
+
+  // ── ART & CREATIVITY (additional) ──
+  {t:"Creativity takes courage.",a:"Henri Matisse",s:"As quoted in Reader's Digest, 1938",c:"art"},
+  {t:"To practice any art, no matter how well or badly, is a way to make your soul grow.",a:"Kurt Vonnegut",s:"A Man Without a Country, 2005",c:"art"},
+  {t:"The painter has the Universe in his mind and hands.",a:"Leonardo da Vinci",s:"Notebooks, c.1490",c:"art"},
+  {t:"Where the spirit does not work with the hand, there is no art.",a:"Leonardo da Vinci",s:"Notebooks, c.1490",c:"art"},
+  {t:"Painting is poetry that is seen rather than felt, and poetry is painting that is felt rather than seen.",a:"Leonardo da Vinci",s:"Notebooks, c.1490",c:"art"},
+  {t:"I dream my painting, and then I paint my dream.",a:"Vincent van Gogh",s:"Letter to Theo van Gogh, July 1888",c:"art"},
+  {t:"What would life be if we had no courage to attempt anything?",a:"Vincent van Gogh",s:"Letter to Theo van Gogh, October 1881",c:"art"},
+  {t:"There is nothing more truly artistic than to love people.",a:"Vincent van Gogh",s:"Letter to Theo van Gogh, July 1882",c:"art"},
+  {t:"Colour is my day-long obsession, joy and torment.",a:"Claude Monet",s:"Letter to Gustave Geffroy, 1908",c:"art"},
+  {t:"I would like to paint the way a bird sings.",a:"Claude Monet",s:"As attributed by contemporaries",c:"art"},
+  {t:"Without atmosphere a painting is nothing.",a:"Rembrandt van Rijn",s:"As attributed; widely cited",c:"art"},
+
+  // ── NATURE (additional) ──
+  {t:"The poetry of the earth is never dead.",a:"John Keats",s:"On the Grasshopper and Cricket, 1816",c:"nature"},
+  {t:"I felt my lungs inflate with the onrush of scenery — air, mountains, trees, people. I thought: This is what it is to be happy.",a:"Sylvia Plath",s:"The Bell Jar, Chapter 8, 1963",c:"nature"},
+  {t:"Come forth into the light of things, let Nature be your teacher.",a:"William Wordsworth",s:"The Tables Turned, 1798",c:"nature"},
+  {t:"Nature always wears the colours of the spirit.",a:"Ralph Waldo Emerson",s:"Nature, Chapter 1, 1836",c:"nature"},
+  {t:"To walk in nature is to witness a thousand miracles.",a:"Mary Davis",s:"Attributed; widely cited",c:"nature"},
+  {t:"The mountains are calling and I must go.",a:"John Muir",s:"Letter to his sister Sarah, September 3, 1873",c:"nature"},
+  {t:"In all things of nature there is something of the marvellous.",a:"Aristotle",s:"Parts of Animals, Book I, 645a",c:"nature"},
+  {t:"Wilderness is not a luxury but a necessity of the human spirit.",a:"Edward Abbey",s:"Desert Solitaire, 1968",c:"nature"},
+
+  // ── COURAGE (additional) ──
+  {t:"Life shrinks or expands in proportion to one's courage.",a:"Anaïs Nin",s:"The Diary of Anaïs Nin, Vol. 3, 1969",c:"courage"},
+  {t:"I am not afraid of storms, for I am learning how to sail my ship.",a:"Louisa May Alcott",s:"Little Women, Chapter 14, 1868",c:"courage"},
+  {t:"The most common form of despair is not being who you are.",a:"Søren Kierkegaard",s:"The Sickness Unto Death, 1849",c:"courage"},
+  {t:"Security is mostly a superstition. Life is either a daring adventure or nothing.",a:"Helen Keller",s:"The Open Door, 1957",c:"courage"},
+  {t:"A ship is safe in harbour, but that's not what ships are for.",a:"John A. Shedd",s:"Salt from My Attic, 1928",c:"courage"},
+  {t:"It is hard to fail, but it is worse never to have tried to succeed.",a:"Theodore Roosevelt",s:"Speech at the Hamilton Club, Chicago, April 10, 1899",c:"courage"},
+  {t:"Far better it is to dare mighty things, to win glorious triumphs, even though checkered by failure.",a:"Theodore Roosevelt",s:"Speech at the Hamilton Club, Chicago, April 10, 1899",c:"courage"},
+
+  // ── TRUTH & KNOWLEDGE (additional) ──
+  {t:"Real knowledge is to know the extent of one's ignorance.",a:"Confucius",s:"Analects, Book II, Chapter 17",c:"truth"},
+  {t:"The truth knocks on the door and you say, go away, I'm looking for the truth.",a:"Robert M. Pirsig",s:"Zen and the Art of Motorcycle Maintenance, 1974",c:"truth"},
+  {t:"All truths are easy to understand once they are discovered; the point is to discover them.",a:"Galileo Galilei",s:"Attributed; consistent with his writings",c:"truth"},
+  {t:"Three things cannot be long hidden: the sun, the moon, and the truth.",a:"Buddha",s:"Dhammapada, traditional attribution",c:"truth"},
+  {t:"A wise man can learn more from a foolish question than a fool can learn from a wise answer.",a:"Bruce Lee",s:"Tao of Jeet Kune Do, 1975",c:"truth"},
+  {t:"Honesty is the first chapter in the book of wisdom.",a:"Thomas Jefferson",s:"Letter to Nathaniel Macon, January 12, 1819",c:"truth"},
+  {t:"The truth is rarely pure and never simple.",a:"Oscar Wilde",s:"The Importance of Being Earnest, Act I, 1895",c:"truth"},
+  {t:"Science is the belief in the ignorance of experts.",a:"Richard Feynman",s:"What is Science?, 1969",c:"truth"},
+
+  // ── TIME & LIFE (additional) ──
+  {t:"In three words I can sum up everything I've learned about life: it goes on.",a:"Robert Frost",s:"Attributed; widely cited from the 1950s",c:"time"},
+  {t:"The two most powerful warriors are patience and time.",a:"Leo Tolstoy",s:"War and Peace, Book 10, Chapter 16, 1869",c:"time"},
+  {t:"It's not the years in your life that count. It's the life in your years.",a:"Abraham Lincoln",s:"Attributed; first confirmed print, 1947",c:"time"},
+  {t:"You only live once, but if you do it right, once is enough.",a:"Mae West",s:"Attributed; widely cited",c:"time"},
+  {t:"The trouble is, you think you have time.",a:"Buddha",s:"Traditional attribution; exact source unverified",c:"time"},
+  {t:"Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.",a:"Buddha",s:"Dhammapada, traditional attribution",c:"time"},
+  {t:"Life is ten percent what happens to you and ninety percent how you respond to it.",a:"Charles R. Swindoll",s:"Strengthening Your Grip, 1982",c:"time"},
+  {t:"Twenty years from now you will be more disappointed by the things that you didn't do than by the ones you did do.",a:"Mark Twain",s:"Attributed; first appears in print, 1990",c:"time"},
+
+  // ── JUSTICE & SOCIETY (additional) ──
+  {t:"The most courageous act is still to think for yourself. Aloud.",a:"Coco Chanel",s:"As attributed; widely cited",c:"justice"},
+  {t:"First they ignore you, then they laugh at you, then they fight you, then you win.",a:"Nicholas Klein",s:"Address to Amalgamated Clothing Workers, 1914",c:"justice"},
+  {t:"Nobody made a greater mistake than he who did nothing because he could do only a little.",a:"Edmund Burke",s:"Attributed; consistent with his writings",c:"justice"},
+  {t:"If you are neutral in situations of injustice, you have chosen the side of the oppressor.",a:"Desmond Tutu",s:"As widely attributed; consistent with his speeches",c:"justice"},
+  {t:"Darkness cannot drive out darkness; only light can do that. Hate cannot drive out hate; only love can do that.",a:"Martin Luther King Jr.",s:"Strength to Love, 1963",c:"justice"},
+  {t:"The time is always right to do what is right.",a:"Martin Luther King Jr.",s:"Speech at Oberlin College, October 22, 1964",c:"justice"},
+  {t:"Education is the most powerful weapon which you can use to change the world.",a:"Nelson Mandela",s:"Speech at the Planetarium, Johannesburg, July 16, 2003",c:"justice"},
+  {t:"For to be free is not merely to cast off one's chains, but to live in a way that respects and enhances the freedom of others.",a:"Nelson Mandela",s:"Long Walk to Freedom, 1994",c:"justice"},
+];
+
+// ── STATE ──
+let currentCat = 'all';
+let currentQuote = null;
+let currentArtIdx = -1;   // index into shuffledArt of what's currently shown
+let currentGradient = null;
+let activeLayer = 'a';
+let transitioning = false;
+let hintGone = false;
+let touchX = 0, touchY = 0;
+
+// One-time shuffle of the artwork list
+const shuffledArt = [...ARTWORKS].sort(() => Math.random() - 0.5);
+let nextArtIdx = 0; // always points to next artwork to try
+
+const failedIds = new Set();
+const blobCache = {}; // url -> blobUrl
+
+const bgA = document.getElementById('bg-a');
+const bgB = document.getElementById('bg-b');
+const artCredit = document.getElementById('art-credit');
+const qWrap = document.getElementById('quote-wrap');
+const qText = document.getElementById('q-text');
+const qAuthor = document.getElementById('q-author');
+const qSource = document.getElementById('q-source');
+const hintEl = document.getElementById('hint');
+const toast = document.getElementById('toast');
+
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function filteredQuotes() { return currentCat === 'all' ? QUOTES : QUOTES.filter(q => q.c === currentCat); }
+
+// ── CROSSFADE ──
+function applyBg(url, isImage, work) {
+  const nextId = activeLayer === 'a' ? 'b' : 'a';
+  const nextEl = nextId === 'a' ? bgA : bgB;
+  const currEl = activeLayer === 'a' ? bgA : bgB;
+  nextEl.style.backgroundImage = isImage ? `url('${url}')` : url;
+  artCredit.textContent = work ? `${work.title}  ·  ${work.artist}  ·  ${work.year}` : '';
+  nextEl.style.opacity = 1;
+  currEl.style.opacity = 0;
+  activeLayer = nextId;
+}
+
+// ── FETCH AS BLOB (strips Referer — needed for GitHub Pages) ──
+// ── LOAD NEXT ARTWORK ──
+// Uses Image() for display — simple, reliable, no CORS issues.
+// Tries each artwork in shuffled order, skipping failures.
+function loadNextArtwork(onDone) {
+  const total = shuffledArt.length;
+  let attempts = 0;
+
+  function tryNext() {
+    if (attempts >= total) { onDone(null); return; }
+
+    const idx = nextArtIdx % total;
+    nextArtIdx = (nextArtIdx + 1) % total;
+    attempts++;
+
+    const work = shuffledArt[idx];
+    if (failedIds.has(work.id) || idx === currentArtIdx) {
+      tryNext(); return;
+    }
+
+    const url = work.url;
+    const img = new Image();
+
+    img.onload = () => {
+      currentArtIdx = idx;
+      onDone({ work, url });
+    };
+
+    img.onerror = () => {
+      failedIds.add(work.id);
+      // Small delay before trying next — avoids hammering server
+      setTimeout(tryNext, 300);
+    };
+
+    img.src = url;
+  }
+
+  // Stagger the start slightly so rapid shuffles don't all fire at once
+  setTimeout(tryNext, 200);
+}
+
+function pickGradient() {
+  const g = rand(GRADIENTS.filter(x => x !== currentGradient));
+  currentGradient = g; return g;
+}
+
+function showNewArt() {
+  loadNextArtwork(result => {
+    if (result) applyBg(result.url, true, result.work);
+    else applyBg(pickGradient(), false, null);
+  });
+}
+
+// ── QUOTE ──
+function showQuote(q, animate = true) {
+  if (animate) {
+    qWrap.classList.add('out');
+    setTimeout(() => {
+      qText.textContent = q.t; qAuthor.textContent = q.a; qSource.textContent = q.s;
+      currentQuote = q; qWrap.classList.remove('out');
+    }, 460);
+  } else {
+    qText.textContent = q.t; qAuthor.textContent = q.a; qSource.textContent = q.s;
+    currentQuote = q;
+  }
+}
+
+function nextQuote() {
+  const pool = filteredQuotes();
+  return rand(pool.filter(x => x !== currentQuote)) || rand(pool);
+}
+
+function hideHint() { if (!hintGone) { hintEl.style.opacity = 0; hintGone = true; } }
+function showToast(msg, dur = 2800) {
+  toast.textContent = msg; toast.classList.add('on');
+  setTimeout(() => toast.classList.remove('on'), dur);
+}
+
+// ── ACTIONS ──
+function shuffle() {
+  if (transitioning) return; transitioning = true; hideHint();
+  showQuote(nextQuote());
+  setTimeout(() => { transitioning = false; }, 1000);
+  showNewArt();
+}
+function newArtOnly() {
+  if (transitioning) return; transitioning = true; hideHint();
+  setTimeout(() => { transitioning = false; }, 1000);
+  showNewArt();
+}
+function newQuoteOnly() { hideHint(); showQuote(nextQuote()); }
+
+// ── SAVE ──
+function saveImage() {
+  if (!currentQuote) return;
+  showToast('Preparing…', 8000);
+  const W = 1080, H = 1350;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  function drawText() {
+    const ov = ctx.createLinearGradient(0,0,0,H);
+    ov.addColorStop(0,'rgba(0,0,0,0.6)'); ov.addColorStop(0.4,'rgba(0,0,0,0.28)'); ov.addColorStop(1,'rgba(0,0,0,0.72)');
+    ctx.fillStyle = ov; ctx.fillRect(0,0,W,H);
+
+    // Flanking quote marks
+    ctx.font = 'italic 200px Georgia,serif'; ctx.fillStyle = 'rgba(201,168,76,0.5)';
+    ctx.textAlign = 'left';  ctx.fillText('\u201C', 52, H*0.34);
+    ctx.textAlign = 'right'; ctx.fillText('\u201D', W-52, H*0.78);
+
+    const fs = Math.max(44, Math.min(70, 3600/currentQuote.t.length));
+    ctx.font = `italic 300 ${fs}px Georgia,serif`; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    wrapCanvas(ctx, currentQuote.t, W/2, H*0.43, W-200, fs*1.55);
+
+    const ry = H*0.82;
+    ctx.strokeStyle = '#c9a84c'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(W/2-60,ry); ctx.lineTo(W/2+60,ry); ctx.stroke();
+
+    ctx.font = '300 30px Helvetica,Arial,sans-serif';
+    ctx.fillStyle = '#e8cc7a'; ctx.textAlign = 'center';
+    ctx.fillText(currentQuote.a.toUpperCase(), W/2, ry+52);
+
+    ctx.font = 'italic 22px Georgia,serif'; ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.fillText(currentQuote.s, W/2, ry+92);
+
+    if (currentArtIdx >= 0) {
+      const w = shuffledArt[currentArtIdx];
+      ctx.font = '20px Helvetica,Arial,sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fillText(`${w.title}  ·  ${w.artist}`, W/2, H-36);
+    }
+
+    try {
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `verba-${Date.now()}.jpg`; a.click();
+        URL.revokeObjectURL(url); showToast('Saved!');
+      }, 'image/jpeg', 0.93);
+    } catch(e) { showToast('Save failed'); }
+  }
+
+  if (currentArtIdx >= 0) {
+    const url = shuffledArt[currentArtIdx].url;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const r = img.naturalWidth/img.naturalHeight;
+      let sx=0,sy=0,sw=img.naturalWidth,sh=img.naturalHeight;
+      if(r>W/H){sw=img.naturalHeight*(W/H);sx=(img.naturalWidth-sw)/2;}
+      else{sh=img.naturalWidth*(H/W);sy=(img.naturalHeight-sh)/2;}
+      ctx.drawImage(img,sx,sy,sw,sh,0,0,W,H); drawText();
+    };
+    img.onerror = () => { fillGrad(ctx,W,H); drawText(); };
+    img.src = url;
+  } else {
+    fillGrad(ctx,W,H); drawText();
+  }
+}
+
+function fillGrad(ctx,W,H) {
+  const g = ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,'#1a1a2e'); g.addColorStop(1,'#0a0a0a');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+
+function wrapCanvas(ctx,text,x,y,maxW,lh) {
+  const words=text.split(' '); let line='',ly=y;
+  for(let i=0;i<words.length;i++){
+    const test=line+words[i]+' ';
+    if(ctx.measureText(test).width>maxW&&i>0){ctx.fillText(line.trim(),x,ly);line=words[i]+' ';ly+=lh;}
+    else line=test;
+  }
+  ctx.fillText(line.trim(),x,ly);
+}
+
+// ── EVENTS ──
+document.querySelectorAll('.pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active'); currentCat=p.dataset.cat; showQuote(nextQuote());
+  });
+});
+document.getElementById('btn-shuffle').addEventListener('click', shuffle);
+document.getElementById('btn-art').addEventListener('click', newArtOnly);
+document.getElementById('btn-save').addEventListener('click', saveImage);
+
+document.addEventListener('touchstart', e=>{touchX=e.touches[0].clientX;touchY=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchend', e=>{
+  const dx=e.changedTouches[0].clientX-touchX, dy=e.changedTouches[0].clientY-touchY;
+  const ax=Math.abs(dx), ay=Math.abs(dy);
+  if(ax<25&&ay<25) return;
+  if(ay>ax&&dy<-35) newArtOnly();
+  else if(ax>ay&&ax>35) newQuoteOnly();
+},{passive:true});
+
+// ── INIT ──
+(function(){
+  showQuote(rand(QUOTES), false);
+  applyBg(pickGradient(), false, null);
+  showNewArt();
+})();
+</script>
+</body>
+</html>
